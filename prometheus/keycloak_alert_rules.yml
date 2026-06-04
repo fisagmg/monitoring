@@ -1,0 +1,72 @@
+groups:
+
+  - name: node-alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 50
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          description: "CPU usage on {{ $labels.instance }} is above 50% for 2 minutes."
+
+
+  - name: keycloak-alerts
+    rules:
+
+      # 1) 활성 세션 증가 (세션 폭주 감지)
+      - alert: KeycloakActiveSessionsHigh
+        expr: vendor_statistics_approximate_entries{cache="sessions"} > 4
+        for: 1m
+        labels:
+          severity: warning
+          service: keycloak
+        annotations:
+          summary: "Keycloak Active Sessions High"
+          description: "Active session count is {{ $value }} on {{ $labels.instance }}."
+
+      # 2) 로그인 실패 급증
+      - alert: KeycloakLoginFailuresSpike
+        expr: increase(vendor_statistics_miss_primary_owner_total{cache="loginFailures"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: keycloak
+        annotations:
+          summary: "Keycloak Login Failures Spike"
+          description: "More than 20 login failures in 5 minutes on {{ $labels.instance }}."
+
+      # 3) JVM CPU High
+      - alert: KeycloakJvmCpuHigh
+        expr: process_cpu_usage > 0.8
+        for: 1m
+        labels:
+          severity: critical
+          service: keycloak
+        annotations:
+          summary: "Keycloak JVM CPU High"
+          description: "Keycloak JVM CPU usage is {{ $value }} on {{ $labels.instance }}."
+
+      # 4) cache remove misses 증가 (cache 문제 탐지)
+      - alert: KeycloakCacheRemoveMissSpike
+        expr: increase(vendor_cache_container_stats_remove_misses[10m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+          service: keycloak
+        annotations:
+          summary: "Keycloak Cache Remove Miss Spike"
+          description: "Cache remove misses increased significantly. Value: {{ $value }}."
+
+      # 5) Cache hit-ratio 저하 (성능 저하)
+      - alert: KeycloakCacheHitRatioLow
+        expr: vendor_cache_container_stats_hit_ratio < 0.85
+        for: 2m
+        labels:
+          severity: warning
+          service: keycloak
+        annotations:
+          summary: "Keycloak Cache Hit Ratio Low"
+          description: "Cache hit ratio dropped to {{ $value }} on {{ $labels.instance }}."
+
+

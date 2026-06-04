@@ -1,0 +1,110 @@
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+#        - targets: ["localhost:9093"]
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "alert_rules.yml"
+  - "keycloak_alert_rules.yml"
+  - "haproxy_alert_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: 'mysql-exporter'
+    scrape_interval: 10s           # 10초마다 수집 (기본 15초보다 세밀)
+    static_configs:
+      - targets:
+          - 172.16.X.71:9104       # Master
+          - 172.16.X.72:9104       # Slave1
+          - 172.16.X.73:9104       # Slave2
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: "172\\.16\\.X\\.(\\d+):.*"
+        replacement: "mysql-node-${1}"
+  - job_name: 'keycloak'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['172.16.X.110:9000']
+  
+  - job_name: 'orchestrator'
+    static_configs:
+      - targets: ["172.16.X.70:3002"]  
+    basic_auth:
+      username: "admin"
+      password: "admin"
+
+  - job_name: 'haproxy'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - '172.16.X.75:8405'
+          - '172.16.X.76:8405'
+
+
+  - job_name: 'mysql_loki'
+    static_configs:
+      - targets:
+          - '172.16.X.71:3100'  # Loki 실행 서버 IP
+          - '172.16.X.72:3100'
+          - '172.16.X.73:3100'
+
+  - job_name: 'haproxy_loki'
+    scrape_interval: 15s              # 15초마다 Loki 메트릭 수집
+    metrics_path: '/metrics'          # Loki의 메트릭 엔드포인트
+    static_configs:
+      - targets:
+          - '172.16.X.75:3100'       # HAProxy Active 노드 (Loki 실행)
+          - '172.16.X.76:3100'       # HAProxy Backup 노드 (Loki 실행)
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: "172\\.16\\.X\\.(\\d+):.*"
+        replacement: "haproxy-loki-${1}"
+
+  - job_name: 'guacamole_loki'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - '172.16.X.10:3100'   # 또는 Guacamole Loki IP
+
+  - job_name: 'frontend'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          - '172.16.XX.10:3001'
+
+
+  - job_name: 'keycloak-node'
+    static_configs:
+      - targets: ['172.16.X.110:9100']   # Keycloak VM IP:포트
+
+  - job_name: 'haproxy-node'
+    static_configs:
+      - targets: ['172.16.X.75:9100']   # haproxy VM IP:포트
+
+
+
+

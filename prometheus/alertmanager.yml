@@ -1,0 +1,76 @@
+global:
+  resolve_timeout: 5m
+
+
+route:
+  receiver: "send-to-all"
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 2m
+
+receivers:
+
+  # -------------------------
+  # 1) MCP Webhook Receiver
+  # -------------------------
+  - name: "mcp"
+    webhook_configs:
+      - url: "http://172.16.X.150:8080/api/alerts/webhook"
+        send_resolved: true
+
+  # -------------------------
+  # 2) Slack Receiver
+  # -------------------------
+  - name: "slack"
+    slack_configs:
+      - api_url: "https://hooks.slack.com/services/T091W7Y15K9/XXXXXXXXXXXX/XXXXXXXXXXXXXXXXX"
+        channel: "#ce5-최종"
+        send_resolved: true
+        title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Instance:* {{ .CommonLabels.instance }}
+          *Status:* {{ .Status }}
+          *Description:* {{ .CommonAnnotations.description }}
+          {{ range .Alerts }}
+          *Started:* {{ .StartsAt }}
+          {{ end }}          
+          상세보기: http://172.16.X.150:3000/
+
+  # -------------------------
+  # 3) BOTH (Slack + MCP)
+  # -------------------------
+  - name: "send-to-all"
+    webhook_configs:
+      - url: "http://172.16.X.150:8080/api/alerts/webhook"
+        send_resolved: true
+
+    slack_configs:
+      - api_url: "https://hooks.slack.com/services/T091W7Y15K9/XXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXX"
+        channel: "#ce5-최종"
+        send_resolved: true
+        title: '{{ .CommonLabels.alertname }} ({{ .Status | toUpper }})'
+        text: |
+          *Alert:* {{ .CommonLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Instance:* {{ .CommonLabels.instance }}
+          *Status:* {{ .Status }}
+          *Description:* {{ .CommonAnnotations.description }}
+          {{ range .Alerts }}
+          *Started:* {{ .StartsAt }}
+          {{ end }}
+          상세보기: http://172.16.X.150:3000/
+
+
+# -------------------------
+# Inhibit Rules (Optional)
+# -------------------------
+#inhibit_rules:
+#  - source_match:
+#      severity: "critical"
+#    target_match:
+#      severity: "warning"
+#    equal: ["alertname", "instance"]
+
