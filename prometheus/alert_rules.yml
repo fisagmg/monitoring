@@ -1,0 +1,12 @@
+groups:
+  - name: haproxy-alerts
+    rules:
+      - alert: HAProxy_HighConnection
+        expr: haproxy_server_active_connections > 200
+        for: 5s
+        labels:
+          severity: critical
+        annotations:
+          summary: "HAProxy Active Connections High"
+          description: "Active connections high on backend {{ $labels.backend }} ({{ $value }} active)."
+

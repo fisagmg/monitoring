@@ -2,7 +2,7 @@
 
 ---
 
-# 📊 Monitoring & Observability Architecture
+#  Monitoring & Observability Architecture
 
 ## 1. 모니터링 레포지토리 개요
 
@@ -196,3 +196,10 @@ Grafana는 단순 시각화 도구가 아니라
 * 멀티 클러스터 모니터링
 
 ---
+
+## 관련 문서
+
+| 구분 | 문서 | 설명 |
+|---|---|---|
+|  prometheus | [prometheus 구성 문서](https://github.com/jihwan77/monitoring/blob/main/prometheus/prometheus.md) | 매트릭 수집 목록, 알림 전송, 장애 감지 정리  |
+
