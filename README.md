@@ -201,5 +201,5 @@ Grafana는 단순 시각화 도구가 아니라
 
 | 구분 | 문서 | 설명 |
 |---|---|---|
-|  prometheus | [prometheus 구성 문서](https://github.com/jihwan77/monitoring/blob/main/prometheus/prometheus.md) | 매트릭 수집 목록, 알림 전송, 장애 감지 정리  |
+|  prometheus | [prometheus 구성 문서](https://github.com/fisagmg/monitoring/blob/main/prometheus/prometheus.md) | 매트릭 수집 목록, 알림 전송, 장애 감지 정리  |
 
