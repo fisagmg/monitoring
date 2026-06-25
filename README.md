@@ -6,10 +6,12 @@
 
 ## 1. 모니터링 레포지토리 개요
 
-본 레포지토리는 최종 프로젝트에서 사용된 **모니터링 및 관측(Observability) 인프라**를 관리하기 위한 저장소이다.
+본 레포지토리는 최종 프로젝트에서 사용된 **모니터링 및 관측(Observability)** 인프라를 관리하기 위한 저장소이다.
 서비스의 단순한 “정상 동작 여부” 확인을 넘어, **장애 원인 추적·운영 안정성·확장성 판단**을 목표로 설계되었다.
 
-모니터링 영역은 서비스 영역과 분리된 **독립적인 Management Zone**에서 운영된다.
+모니터링 영역은 서비스 영역과 분리된 독립적인 **Management Zone**에서 운영된다.
+
+또한 Prometheus, Alertmanager, Loki에서 수집된 장애 알림과 로그를 기반으로 MCP 서버와 LLM을 연계하여, 운영자가 장애 상황을 더 빠르게 해석하고 조치 방향을 판단할 수 있도록 하는 AI 기반 장애 분석 흐름도 함께 구성하였다.
 
 ---
 
@@ -21,6 +23,7 @@
 * 메트릭과 로그를 분리하되 상호 연계 가능
 * 서비스 장애가 모니터링 시스템에 영향을 주지 않도록 분리
 * 실제 운영 환경에서 사용 가능한 구성
+* Alertmanager와 Loki 로그를 활용한 AI 기반 장애 분석 흐름 구성
 
 “그래프를 그리는 것”이 목적이 아니라,
 **문제가 생겼을 때 답을 주는 시스템**을 목표로 하였다.
@@ -35,9 +38,13 @@
 * **Grafana**: 시각화 및 대시보드
 * **Loki**: 로그 수집
 * **Promtail**: 로그 수집 에이전트
+* **Alertmanager**: 장애 알림 라우팅
+* **MCP Analysis Server**: 알림 및 로그 기반 AI 분석 연동
 
 이 구성은 CNCF 권장 Observability 패턴을 기반으로 하며,
 Kubernetes 환경과 On-Premise 환경 모두를 고려하여 설계되었다.
+
+특히 장애 상황에서는 Prometheus가 Alert Rule을 평가하고, Alertmanager가 알림을 전달하며, MCP 서버가 Loki 로그와 알림 정보를 바탕으로 LLM 분석을 요청하는 구조로 확장하였다.
 
 ---
 
@@ -153,7 +160,36 @@ Grafana는 단순 시각화 도구가 아니라
 
 ---
 
-## 9. 보안 및 접근 제어
+## 9. AI 기반 장애 분석 흐름
+
+본 프로젝트에서는 모니터링 시스템에서 발생한 Alert를 단순 알림으로 끝내지 않고, MCP 서버를 통해 LLM 기반 분석 흐름으로 확장하였다.
+
+### 분석 흐름
+Prometheus Alert Rule
+→ Alertmanager
+→ Admin Backend Webhook
+→ MCP Analysis Server
+→ Loki Log Query
+→ LLM Analysis
+→ Admin Dashboard
+
+### MCP Analysis Server 역할
+
+* Alertmanager에서 발생한 알림 정보 활용
+* Alert 발생 서비스, 인스턴스, 시간대 기준 Loki 로그 조회
+* 조회된 로그와 알림 정보를 LLM 분석 요청으로 변환
+* 장애 요약, 추정 원인, 영향 범위, 권장 조치 반환
+* 관리자 대시보드에서 분석 결과 확인
+
+현재 구조에서는 Prometheus가 장애 징후를 감지하고 Alertmanager를 통해 알림을 전달하며, MCP 서버는 해당 알림을 기준으로 Loki 로그를 조회하여 LLM 분석을 수행한다.
+
+즉, Prometheus는 장애 감지의 출발점이고, Loki는 장애 분석을 위한 로그 데이터 소스이며, MCP 서버는 이를 LLM과 연결하는 분석 계층이다.
+
+상세 구현 내용은 별도 문서인 AI Monitoring 구성 문서에서 관리한다.
+
+---
+
+## 10. 보안 및 접근 제어
 
 ### 인증
 
@@ -202,4 +238,4 @@ Grafana는 단순 시각화 도구가 아니라
 | 구분 | 문서 | 설명 |
 |---|---|---|
 |  prometheus | [prometheus 구성 문서](https://github.com/fisagmg/monitoring/blob/main/prometheus/prometheus.md) | 매트릭 수집 목록, 알림 전송, 장애 감지 정리  |
-
+|  AI Monitoring | [AI Monitoring 구성 문서](https://github.com/fisagmg/monitoring/blob/main/cve-labhub-onpremis-admin-main/MCP_Analysis_Server.md) | MCP 서버를 통한 장애 분석, LLM 기반 조치 방향 정리 |
